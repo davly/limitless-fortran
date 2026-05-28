@@ -1,0 +1,23 @@
+name = "limitless-fortran"
+version = "0.1.0"
+license = "Apache-2.0"
+author = "David Carson"
+maintainer = "david@promptboy.dev"
+copyright = "Copyright 2026, davly"
+description = "Cohort-canonical Fortran 2008 SDK -- L43 Mirror-Mark v1 + R143 LOUD-ONCE + R166 LIABILITY-FOOTER"
+
+[build]
+auto-executables = false
+auto-tests = true
+auto-examples = false
+
+[install]
+library = true
+
+[library]
+source-dir = "src"
+
+[[test]]
+name = "test_mirrormark"
+source-dir = "test"
+main = "test_mirrormark.f90"
