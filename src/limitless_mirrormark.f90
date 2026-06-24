@@ -56,7 +56,14 @@ contains
 
     !> Compute the canonical Mirror-Mark string for the given inputs.
     !>
-    !> Pre-condition: corpus_sha is exactly 32 bytes.
+    !> Pre-condition: corpus_sha is exactly 32 bytes (SHA256_DIGEST_SIZE).
+    !>
+    !> If corpus_sha is not exactly 32 bytes the function returns the empty
+    !> string '' as an error sentinel rather than reading past the end of the
+    !> array (a valid mark always begins with MARK_PREFIX, so '' is
+    !> unambiguous). This mirrors the cohort InvalidCorpusLength contract
+    !> enforced on the sign path by the D / Go / etc. siblings, and matches
+    !> verify_mark's ERR_INVALID_CORPUS_LEN guard.
     function sign_mark(corpus_sha, payload, key) result(mark)
         integer(int8), intent(in)   :: corpus_sha(:)
         integer(int8), intent(in)   :: payload(:)
@@ -68,6 +75,15 @@ contains
         integer(int8) :: body(MARK_BODY_LEN)
         character(len=:), allocatable :: body_b64
         integer :: i
+
+        ! Reject a non-32-byte corpus_sha. Without this guard a short corpus
+        ! causes an out-of-bounds read in the body-assembly loop below
+        ! (body(i) = corpus_sha(i) for i = 1..8) and silently emits a corrupt
+        ! mark, diverging from the cohort firewall.
+        if (size(corpus_sha) /= SHA256_DIGEST_SIZE) then
+            mark = ''
+            return
+        end if
 
         ! Build HMAC input: 0x01 || corpus_sha || payload
         allocate(input(1 + size(corpus_sha) + size(payload)))

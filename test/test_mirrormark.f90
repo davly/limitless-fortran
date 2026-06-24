@@ -46,6 +46,8 @@ program test_mirrormark
     ! Errors
     ! -----------------------------------------------------------------------
     call run('Sign returns invalid-corpus-len for short corpus', test_11_invalid_corpus_len())
+    call run('sign_mark returns empty sentinel for short corpus', test_11b_sign_short_corpus())
+    call run('sign_mark returns empty sentinel for long corpus', test_11c_sign_long_corpus())
     call run('Verify returns unknown-version for missing prefix', test_12_unknown_version())
     call run('Verify returns malformed for short body', test_13_malformed())
 
@@ -198,6 +200,31 @@ contains
         short_corpus = 0_int8
         ok = (verify_mark(KAT1_MARK, short_corpus, payload, key) == ERR_INVALID_CORPUS_LEN)
     end function test_11_invalid_corpus_len
+
+    function test_11b_sign_short_corpus() result(ok)
+        logical :: ok
+        integer(int8) :: short_corpus(4), payload(2), key(2)
+        character(len=:), allocatable :: mark
+        short_corpus = [int(z'01',int8), int(z'02',int8), int(z'03',int8), int(z'04',int8)]
+        payload = [int(z'AA',int8), int(z'BB',int8)]
+        key     = [int(z'CC',int8), int(z'DD',int8)]
+        ! A sub-8-byte corpus would read past the end of the array in the
+        ! body-assembly loop; the guard must return the empty sentinel.
+        mark = sign_mark(short_corpus, payload, key)
+        ok = (len(mark) == 0)
+    end function test_11b_sign_short_corpus
+
+    function test_11c_sign_long_corpus() result(ok)
+        logical :: ok
+        integer(int8) :: long_corpus(40), payload(2), key(2)
+        character(len=:), allocatable :: mark
+        integer :: i
+        do i = 1, 40; long_corpus(i) = int(i, int8); end do
+        payload = [int(z'AA',int8), int(z'BB',int8)]
+        key     = [int(z'CC',int8), int(z'DD',int8)]
+        mark = sign_mark(long_corpus, payload, key)
+        ok = (len(mark) == 0)
+    end function test_11c_sign_long_corpus
 
     function test_12_unknown_version() result(ok)
         logical :: ok
